@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"sync"
 )
 
@@ -20,6 +21,7 @@ func main() {
 	mux.HandleFunc("/", handleRoot)
 
 	mux.HandleFunc("POST /users", createUser)
+	mux.HandleFunc("GET /users/{id}", getUser)
 
 	fmt.Println("Server listening to :8080")
 	http.ListenAndServe(":8080", mux)
@@ -47,4 +49,30 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	cacheMutex.Unlock()
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func getUser(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(r.PathValue("id"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	cacheMutex.RLock()
+	user, ok := userCache[id]
+	cacheMutex.RUnlock()
+	if !ok {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	j, err := json.Marshal(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(j)
 }
