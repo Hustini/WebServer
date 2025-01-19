@@ -18,11 +18,11 @@ var cacheMutex sync.RWMutex
 
 func main() {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", handleRoot)
+	mux.HandleFunc("/", handleMethode)
 
 	mux.HandleFunc("/users", handleMethode)
-	mux.HandleFunc("GET /users/{id}", getUser)
-	mux.HandleFunc("DELETE /users/{id}", deleteUser)
+	mux.HandleFunc("GET /users/{id}", handleMethode)
+	mux.HandleFunc("DELETE /users/{id}", handleMethode)
 
 	fmt.Println("Server listening to :8080")
 	http.ListenAndServe(":8080", mux)
@@ -39,6 +39,12 @@ func handleMethode(w http.ResponseWriter, r *http.Request) {
 			createUser(w, r)
 		} else {
 			http.Error(w, "Not Found", http.StatusNotFound)
+		}
+	case http.MethodGet:
+		if r.URL.Path == "/users/" {
+			getUser(w, r)
+		} else if r.URL.Path == "/" {
+			handleRoot(w, r)
 		}
 	}
 }
