@@ -20,7 +20,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleRoot)
 
-	mux.HandleFunc("POST /users", createUser)
+	mux.HandleFunc("/users", handleMethode)
 	mux.HandleFunc("GET /users/{id}", getUser)
 	mux.HandleFunc("DELETE /users/{id}", deleteUser)
 
@@ -30,6 +30,17 @@ func main() {
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello World")
+}
+
+func handleMethode(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		if r.URL.Path == "/users" {
+			createUser(w, r)
+		} else {
+			http.Error(w, "Not Found", http.StatusNotFound)
+		}
+	}
 }
 
 func createUser(w http.ResponseWriter, r *http.Request) {
