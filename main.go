@@ -22,8 +22,7 @@ func main() {
 	mux.HandleFunc("/", handleMethode)
 
 	mux.HandleFunc("/users", handleMethode)      // POST new user
-	mux.HandleFunc("/users/{id}", handleMethode) // GET user by ID
-	mux.HandleFunc("/users/{id}", handleMethode) // DELETE user by ID
+	mux.HandleFunc("/users/{id}", handleMethode) // GET user by ID and DELETE user by ID
 
 	fmt.Println("Server listening to :8080")
 	http.ListenAndServe(":8080", mux)
@@ -50,6 +49,14 @@ func handleMethode(w http.ResponseWriter, r *http.Request) {
 			getUser(w, id)
 		} else if r.URL.Path == "/" {
 			handleRoot(w, r)
+		}
+	case http.MethodDelete:
+		if strings.Contains(r.URL.Path, "/users/") {
+			id, err := parseIDFromPath(r.URL.Path, "/users/")
+			if err != nil {
+				http.Error(w, "Invalid ID", http.StatusBadRequest)
+			}
+			deleteUser(w, id)
 		}
 	}
 }
@@ -94,13 +101,7 @@ func getUser(w http.ResponseWriter, id int) {
 	w.Write(j)
 }
 
-func deleteUser(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
+func deleteUser(w http.ResponseWriter, id int) {
 	if _, ok := userCache[id]; !ok {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
