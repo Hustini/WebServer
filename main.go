@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -20,9 +21,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handleMethode)
 
-	mux.HandleFunc("/users", handleMethode)
-	mux.HandleFunc("GET /users/{id}", handleMethode)
-	mux.HandleFunc("DELETE /users/{id}", handleMethode)
+	mux.HandleFunc("/users", handleMethode)      // POST new user
+	mux.HandleFunc("/users/{id}", handleMethode) // GET user by ID
+	mux.HandleFunc("/users/{id}", handleMethode) // DELETE user by ID
 
 	fmt.Println("Server listening to :8080")
 	http.ListenAndServe(":8080", mux)
@@ -41,8 +42,12 @@ func handleMethode(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Not Found", http.StatusNotFound)
 		}
 	case http.MethodGet:
-		if r.URL.Path == "/users/" {
-			getUser(w, r)
+		if strings.Contains(r.URL.Path, "/users/") {
+			id, err := parseIDFromPath(r.URL.Path, "/users/")
+			if err != nil {
+				http.Error(w, "Invalid ID", http.StatusBadRequest)
+			}
+			getUser(w, id)
 		} else if r.URL.Path == "/" {
 			handleRoot(w, r)
 		}
@@ -69,13 +74,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func getUser(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.PathValue("id"))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
+func getUser(w http.ResponseWriter, id int) {
 	cacheMutex.RLock()
 	user, ok := userCache[id]
 	cacheMutex.RUnlock()
@@ -111,4 +110,9 @@ func deleteUser(w http.ResponseWriter, r *http.Request) {
 	delete(userCache, id)
 	cacheMutex.Unlock()
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func parseIDFromPath(path string, prefix string) (int, error) {
+	idStr := strings.TrimPrefix(path, prefix)
+	return strconv.Atoi(idStr)
 }
