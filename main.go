@@ -28,7 +28,7 @@ func main() {
 	http.ListenAndServe(":8080", mux)
 }
 
-func handleRoot(w http.ResponseWriter, r *http.Request) {
+func handleRoot(w http.ResponseWriter) {
 	fmt.Fprintf(w, "Hello World")
 }
 
@@ -48,7 +48,7 @@ func handleMethode(w http.ResponseWriter, r *http.Request) {
 			}
 			getUser(w, id)
 		} else if r.URL.Path == "/" {
-			handleRoot(w, r)
+			handleRoot(w)
 		}
 	case http.MethodDelete:
 		if strings.Contains(r.URL.Path, "/users/") {
@@ -78,7 +78,7 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	userCache[len(userCache)+1] = user
 	cacheMutex.Unlock()
 
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func getUser(w http.ResponseWriter, id int) {
@@ -110,7 +110,7 @@ func deleteUser(w http.ResponseWriter, id int) {
 	cacheMutex.Lock()
 	delete(userCache, id)
 	cacheMutex.Unlock()
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
 }
 
 func parseIDFromPath(path string, prefix string) (int, error) {
